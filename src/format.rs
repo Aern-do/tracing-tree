@@ -12,9 +12,7 @@ pub(crate) const LINE_VERT: &str = "│";
 const LINE_HORIZ: &str = "─";
 pub(crate) const LINE_BRANCH: &str = "├";
 pub(crate) const LINE_CLOSE: &str = "┘";
-pub(crate) const LINE_CLOSE2: char = '┌';
 pub(crate) const LINE_OPEN: &str = "┐";
-pub(crate) const LINE_OPEN2: char = '└';
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum SpanMode {
@@ -360,8 +358,12 @@ fn indent_block_with_lines(
     let mut s = String::with_capacity(indent_spaces + prefix.len());
     s.push_str(prefix);
 
-    for _ in 0..(indent_spaces - indent_amount) {
-        s.push(' ');
+    for i in 0..(indent_spaces - indent_amount) {
+        if i % indent_amount == 0 {
+            s.push_str(LINE_VERT);
+        } else {
+            s.push(' ');
+        }
     }
 
     // draw branch
@@ -369,27 +371,27 @@ fn indent_block_with_lines(
 
     match style {
         SpanMode::PreOpen => {
-            buf.push(LINE_OPEN2);
+            buf.push_str(LINE_BRANCH);
             for _ in 1..(indent_amount / 2) {
                 buf.push_str(LINE_HORIZ);
             }
             buf.push_str(LINE_OPEN);
         }
         SpanMode::Open { verbose: false } | SpanMode::Retrace { verbose: false } => {
-            buf.push(LINE_OPEN2);
+            buf.push_str(LINE_BRANCH);
             for _ in 1..indent_amount {
                 buf.push_str(LINE_HORIZ);
             }
             buf.push_str(LINE_OPEN);
         }
         SpanMode::Open { verbose: true } | SpanMode::Retrace { verbose: true } => {
-            buf.push(' ');
+            buf.push_str(LINE_VERT);
             for _ in 1..(indent_amount / 2) {
                 buf.push(' ');
             }
             // We don't have the space for fancy rendering at single space indent.
             if indent_amount > 1 {
-                buf.push(LINE_OPEN2);
+                buf.push('└');
             }
             for _ in (indent_amount / 2)..(indent_amount - 1) {
                 buf.push_str(LINE_HORIZ);
@@ -398,24 +400,24 @@ fn indent_block_with_lines(
             if indent_amount > 1 {
                 buf.push_str(LINE_OPEN);
             } else {
-                buf.push(' ');
+                buf.push_str(LINE_VERT);
             }
         }
         SpanMode::Close { verbose: false } => {
-            buf.push(LINE_CLOSE2);
+            buf.push_str(LINE_BRANCH);
             for _ in 1..indent_amount {
                 buf.push_str(LINE_HORIZ);
             }
             buf.push_str(LINE_CLOSE);
         }
         SpanMode::Close { verbose: true } => {
-            buf.push(' ');
+            buf.push_str(LINE_VERT);
             for _ in 1..(indent_amount / 2) {
                 buf.push(' ');
             }
             // We don't have the space for fancy rendering at single space indent.
             if indent_amount > 1 {
-                buf.push(LINE_CLOSE2);
+                buf.push('┌');
             }
             for _ in (indent_amount / 2)..(indent_amount - 1) {
                 buf.push_str(LINE_HORIZ);
@@ -424,11 +426,11 @@ fn indent_block_with_lines(
             if indent_amount > 1 {
                 buf.push_str(LINE_CLOSE);
             } else {
-                buf.push(' ');
+                buf.push_str(LINE_VERT);
             }
         }
         SpanMode::PostClose => {
-            buf.push(LINE_CLOSE2);
+            buf.push_str(LINE_BRANCH);
             for _ in 1..(indent_amount / 2) {
                 buf.push_str(LINE_HORIZ);
             }
@@ -448,14 +450,12 @@ fn indent_block_with_lines(
 
     // add the rest of the indentation, since we don't want to draw horizontal lines
     // for subsequent lines
-    match style {
-        SpanMode::Open { .. } | SpanMode::Retrace { .. } => s.push_str("  "),
-        SpanMode::Close { .. } => s.push(' '),
-        _ => {}
-    }
-    s.push_str(LINE_VERT);
-    for _ in 1..=indent_amount {
-        s.push(' ');
+    for i in 0..indent_amount {
+        if i % indent_amount == 0 {
+            s.push_str(LINE_VERT);
+        } else {
+            s.push(' ');
+        }
     }
 
     // add all of the actual content, with each line preceded by the indent string
